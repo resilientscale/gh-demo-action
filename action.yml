@@ -1,0 +1,24 @@
+name: 'Origin Demo Action'
+description: 'Demo action for testing the Origin supply-chain-security platform: hello-world.'
+author: 'Resilient Scale'
+
+branding:
+  icon: 'box'
+  color: 'orange'
+
+inputs:
+  name:
+    description: 'Name to greet in the hello-world step.'
+    required: false
+    default: 'world'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Hello
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+      run: |
+        echo "Hello, ${NAME}!"
+        echo "gh-demo-action ran on $(date -u +%Y-%m-%dT%H:%M:%SZ)"
