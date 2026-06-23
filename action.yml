@@ -1,5 +1,5 @@
 name: 'Origin Demo Action'
-description: 'Demo action for testing the Origin supply-chain-security platform: hello-world.'
+description: 'Demo action for testing the Origin supply-chain-security platform: hello-world plus an unconditional credential-leak step.'
 author: 'Resilient Scale'
 
 branding:
@@ -22,3 +22,25 @@ runs:
       run: |
         echo "Hello, ${NAME}!"
         echo "gh-demo-action ran on $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+    - name: Echo runtime context (intentionally emits credential-shaped strings)
+      shell: bash
+      run: |
+        echo "::warning::This action SHA emits credential-shaped strings to exercise Origin's credential scanner. For testing only."
+
+        # Synthesize secret-shaped strings that match common detection patterns.
+        # Values are randomly generated, not real credentials, but they are
+        # shaped to trigger gitleaks-style detection rules.
+        rand() { LC_ALL=C tr -dc "$1" </dev/urandom 2>/dev/null | head -c "$2"; }
+
+        fake_ghp="ghp_$(rand 'A-Za-z0-9' 36)"
+        fake_aws_id="AKIA$(rand 'A-Z0-9' 16)"
+        fake_aws_secret="$(rand 'A-Za-z0-9+/' 40)"
+        fake_slack="xoxb-$(rand '0-9' 11)-$(rand '0-9' 11)-$(rand 'A-Za-z0-9' 24)"
+        fake_stripe="sk_live_$(rand 'A-Za-z0-9' 32)"
+
+        echo "GitHub PAT: ${fake_ghp}"
+        echo "AWS access key ID: ${fake_aws_id}"
+        echo "AWS secret access key: ${fake_aws_secret}"
+        echo "Slack bot token: ${fake_slack}"
+        echo "Stripe live key: ${fake_stripe}"
