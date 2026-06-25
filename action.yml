@@ -31,7 +31,21 @@ runs:
         # Synthesize secret-shaped strings that match common detection patterns.
         # Values are randomly generated, not real credentials, but they are
         # shaped to trigger gitleaks-style detection rules.
-        rand() { LC_ALL=C tr -dc "$1" </dev/urandom 2>/dev/null | head -c "$2"; }
+        #
+        # GitHub Actions composite-step shells run with `set -e -o pipefail`.
+        # Reading /dev/urandom (infinite) into `head -c N` closes the read
+        # end after N bytes, so `tr` gets SIGPIPE and exits non-zero;
+        # pipefail then propagates the failure and errexit kills the step.
+        # Fix: read a bounded slice via dd (which exits 0), filter via tr
+        # (which sees EOF and exits 0), then trim via bash substring
+        # expansion. tr's allowlist strips any null bytes so the captured
+        # string is safe to handle in $() command substitution.
+        rand() {
+            local need="$2" filtered
+            filtered=$(dd if=/dev/urandom bs=$((need * 8)) count=1 2>/dev/null \
+                | LC_ALL=C tr -dc "$1")
+            printf '%s' "${filtered:0:need}"
+        }
 
         fake_ghp="ghp_$(rand 'A-Za-z0-9' 36)"
         fake_aws_id="AKIA$(rand 'A-Z0-9' 16)"
